@@ -6,6 +6,7 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(cors()); // Enable CORS for all routes
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Base route
 app.get('/', (req, res) => {

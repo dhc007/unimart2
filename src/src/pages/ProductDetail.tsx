@@ -7,14 +7,15 @@ import BlockchainStatus from "@/components/BlockchainStatus";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
-import MockDataService from "@/services/mockDataService";
+import DataService from "@/services/dataService";
 import { 
   ArrowLeft, 
   Star, 
   Clock, 
   MessageCircle, 
   Share2,
-  BookOpen
+  BookOpen,
+  ShoppingCart
 } from "lucide-react";
 
 // Define the Product type
@@ -55,9 +56,38 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const dataService = MockDataService.getInstance();
+        const dataService = DataService.getInstance();
         const data = await dataService.getProductById(id);
-        setProduct(data);
+        
+        // Check if the data is valid and log it for debugging
+        console.log("Product data:", data);
+        
+        if (!data) {
+          // Handle null data
+          setLoading(false);
+          return;
+        }
+        
+        // Make sure we have a valid product object with required fields
+        const processedProduct = {
+          id: data._id || data.id, // Handle both _id and id
+          title: data.title || "Untitled Product",
+          price: data.price || 0,
+          description: data.description || "No description available",
+          image: data.image || "https://via.placeholder.com/400",
+          category: data.category || "Uncategorized",
+          condition: data.condition || "Not specified",
+          subject: data.subject,
+          seller: data.sellerName || data.seller || "Unknown Seller",
+          rating: data.rating || 0,
+          postedDate: data.postedDate || "Recently",
+          location: data.location,
+          isBlockchainVerified: data.isBlockchainVerified || false,
+          images: data.images || [],
+          sellerDetails: data.sellerDetails || null
+        };
+        
+        setProduct(processedProduct);
       } catch (error) {
         console.error("Error fetching product:", error);
         toast({
@@ -94,6 +124,56 @@ const ProductDetail = () => {
       description: `Your inquiry has been sent to ${product?.seller}`,
     });
   };
+
+  // Replace your current handlePayment function with this simpler version
+const handlePayment = async () => {
+  // Check if user is logged in
+  const userString = localStorage.getItem("unimart_user");
+  if (!userString) {
+    toast({
+      title: "Authentication required",
+      description: "Please login to purchase items",
+      variant: "destructive",
+    });
+    navigate("/auth");
+    return;
+  }
+  
+  try {
+    // For demo, directly open Razorpay without backend order creation
+    const options = {
+      key: 'rzp_test_C2pkwknRcJE5IS',
+      amount: product.price * 100, // Convert to paise
+      currency: 'INR',
+      name: 'UniMart',
+      description: `Payment for ${product.title}`,
+      handler: function() {
+        toast({
+          title: "Payment Successful",
+          description: `You have successfully purchased ${product.title}`,
+        });
+        navigate('/profile'); // Redirect to profile or order history
+      },
+      prefill: {
+        name: JSON.parse(userString).name,
+        email: JSON.parse(userString).email,
+      },
+      theme: {
+        color: '#4F46E5',
+      }
+    };
+    
+    const razorpay = new (window as any).Razorpay(options);
+    razorpay.open();
+  } catch (error) {
+    console.error('Payment initiation failed:', error);
+    toast({
+      title: "Payment Failed",
+      description: "Failed to initiate payment. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
   if (loading) {
     return (
@@ -276,6 +356,13 @@ const ProductDetail = () => {
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Chat with Seller
+                </Button>
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={handlePayment}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Buy Now
                 </Button>
               </div>
             </div>
